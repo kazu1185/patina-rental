@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>レンタサイクル利用規約 | ホテルパティーナ石垣島</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f6f8; --card: #fff;
+    --accent: #1a5276; --accent2: #154360;
+    --text: #1a1a1a; --muted: #6b7280;
+    --border: #dde3ea; --green: #16a34a; --red: #c0392b;
+    --gold: #b7860b;
+  }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--accent);
+    color: white; padding: 16px 20px 14px; text-align: center;
+  }
+  .header .hotel-name { font-size: 12px; opacity: 0.75; letter-spacing: 0.12em; margin-bottom: 4px; }
+  .header h1 { font-size: 20px; font-weight: 900; letter-spacing: 0.04em; }
+  .header .avail { font-size: 12px; opacity: 0.85; margin-top: 5px; }
+  .header .avail span { font-weight: 700; font-size: 14px; }
+
+  /* STEP BAR */
+  .steps { display: flex; justify-content: center; background: var(--accent2); padding: 9px 16px; }
+  .step-dot {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255,255,255,0.2); color: white;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.3s;
+  }
+  .step-dot.active { background: white; color: var(--accent); }
+  .step-dot.done { background: var(--green); }
+  .step-line { flex: 1; height: 2px; background: rgba(255,255,255,0.2); align-self: center; max-width: 36px; }
+
+  /* SCREENS */
+  .screen { display: none; padding: 18px 16px 52px; max-width: 600px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* CARD */
+  .card { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card-title {
+    font-size: 13px; font-weight: 700; color: var(--accent);
+    letter-spacing: 0.06em; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title::before { content: ''; display: inline-block; width: 4px; height: 16px; background: var(--accent); border-radius: 2px; }
+
+  /* INPUT */
+  .input-row { margin-bottom: 14px; }
+  .input-row label { display: block; font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 6px; letter-spacing: 0.05em; }
+  .input-row input {
+    width: 100%; padding: 13px 14px;
+    border: 2px solid var(--border); border-radius: 10px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 16px;
+    color: var(--text); background: #fafbfc;
+    transition: border-color 0.15s; outline: none;
+  }
+  .input-row input:focus { border-color: var(--accent); background: white; }
+
+  /* BIKE GRID */
+  .bike-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
+  .bike-btn {
+    aspect-ratio: 1; border: 2px solid var(--border); border-radius: 12px;
+    background: white; font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px; font-weight: 700; color: var(--text);
+    cursor: pointer; transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    position: relative;
+  }
+  .bike-btn .num { font-size: 20px; font-weight: 900; line-height: 1; }
+  .bike-btn .lbl { font-size: 10px; font-weight: 400; color: var(--muted); }
+  .bike-btn:active { transform: scale(0.93); }
+  .bike-btn.selected { border-color: var(--accent); background: var(--accent); color: white; }
+  .bike-btn.selected .lbl { color: rgba(255,255,255,0.75); }
+  .bike-btn .cbadge {
+    display: none; position: absolute; top: 3px; right: 3px;
+    width: 16px; height: 16px; background: white; border-radius: 50%;
+    align-items: center; justify-content: center;
+  }
+  .bike-btn .cbadge svg { width: 10px; height: 10px; }
+  .bike-btn.selected .cbadge { display: flex; }
+
+  .selection-banner {
+    background: #eaf1fb; border: 1.5px solid var(--accent);
+    border-radius: 10px; padding: 10px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 13px;
+  }
+  .selection-banner .sl { font-size: 12px; color: var(--muted); }
+  .selection-banner .sv { font-size: 15px; font-weight: 900; color: var(--accent); }
+  .selection-banner.empty .sv { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+  /* TIME */
+  .time-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .time-row:last-child { border-bottom: none; }
+  .time-label { font-size: 13px; color: var(--muted); }
+  .time-value { font-size: 18px; font-weight: 700; }
+  .time-value.hl { color: var(--accent); }
+
+  /* CHECKLIST */
+  .check-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 26px; height: 26px; min-width: 26px;
+    border: 2px solid var(--border); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; margin-top: 2px; flex-shrink: 0;
+  }
+  .check-box svg { display: none; }
+  .check-item.checked .check-box { background: var(--green); border-color: var(--green); }
+  .check-item.checked .check-box svg { display: block; }
+  .check-text { font-size: 14px; line-height: 1.65; }
+  .check-text strong { display: block; font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .check-text .sub { font-size: 12px; color: var(--muted); display: block; margin-top: 2px; }
+  /* 重要項目ハイライト */
+  .check-item .highlight-label {
+    display: inline-block; background: var(--accent); color: white;
+    font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px;
+  }
+  .check-item .warn-label {
+    display: inline-block; background: var(--red); color: white;
+    font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px;
+  }
+
+  /* PROGRESS */
+  .progress-bar { height: 6px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--green); border-radius: 2px; transition: width 0.3s; }
+  .progress-text { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+  /* 進捗バー固定ヘッダー（STEP2専用） */
+  .progress-sticky {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: white;
+    padding: 10px 16px 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+  .progress-sticky.visible { display: block; }
+  .progress-sticky .progress-text { font-size: 13px; margin-bottom: 5px; }
+  /* STEP2表示中はページ上部にスペース確保 */
+  #screen2.active { padding-top: 68px; }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%; padding: 15px; border: none; border-radius: 12px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 16px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s; margin-top: 8px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 2px solid var(--border); }
+  .btn-success { background: var(--green); color: white; font-size: 15px; padding: 18px; }
+  .btn-outline-red { background: white; color: var(--red); border: 2px solid var(--red); }
+  .btn-purple { background: #6d28d9; color: white; }
+
+  /* CONFIRM */
+  .confirm-summary { background: var(--bg); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+  .confirm-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; gap: 12px; }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-row .key { color: var(--muted); white-space: nowrap; }
+  .confirm-row .val { font-weight: 700; text-align: right; }
+  .bike-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+  .bike-tag { background: var(--accent); color: white; border-radius: 20px; padding: 3px 11px; font-size: 13px; font-weight: 700; }
+
+  /* AGREE */
+  .agree-box { background: #eaf1fb; border: 2px solid var(--accent); border-radius: 12px; padding: 16px; margin-bottom: 14px; text-align: center; }
+  .agree-box p { font-size: 14px; color: var(--accent2); font-weight: 700; margin-bottom: 12px; line-height: 1.7; }
+  .agree-btn {
+    width: 100%; padding: 17px; background: var(--accent); color: white; border: none;
+    border-radius: 10px; font-family: 'Noto Sans JP', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.15s;
+  }
+  .agree-btn.agreed { background: var(--green); }
+
+  /* SIGN */
+  .sign-instruction { text-align: center; padding: 10px 0 14px; }
+  .sign-instruction strong { display: block; font-size: 17px; margin-bottom: 5px; }
+  .sign-instruction span { font-size: 13px; color: var(--muted); }
+  .canvas-wrap { position: relative; border: 2px solid var(--border); border-radius: 12px; overflow: hidden; background: #fafafa; touch-action: none; }
+  .canvas-wrap canvas { display: block; width: 100%; cursor: crosshair; }
+  .canvas-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 14px; color: #d1d5db; pointer-events: none; text-align: center; }
+  .sign-actions { display: flex; gap: 10px; margin-top: 12px; }
+  .sign-actions button { flex: 1; margin-top: 0; }
+
+  /* RECEIPT */
+  .receipt {
+    background: white; border-radius: 14px; padding: 20px 16px;
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    max-width: 320px; margin: 0 auto 18px;
+    border: 1px solid var(--border);
+  }
+  .receipt-header { text-align: center; margin-bottom: 12px; }
+  .receipt-header .r-hotel { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; margin-bottom: 3px; }
+  .receipt-header h2 { font-size: 15px; font-weight: 900; letter-spacing: 0.08em; }
+  .receipt-header .r-avail { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .receipt-divider { border: none; border-top: 1px dashed #ccc; margin: 9px 0; }
+  .receipt-row { display: flex; justify-content: space-between; font-size: 11px; margin: 4px 0; }
+  .receipt-row .r-key { color: var(--muted); }
+  .receipt-row .r-val { font-weight: 700; }
+  .receipt-bikes { font-size: 11px; margin: 4px 0; line-height: 1.5; }
+  .receipt-bikes .r-key { color: var(--muted); }
+  .receipt-bikes .r-val { font-weight: 700; }
+  .receipt-room { font-size: 11px; margin: 4px 0; }
+  .receipt-room .r-key { color: var(--muted); }
+  .receipt-room .r-val { font-weight: 700; }
+  .receipt-checks { margin: 8px 0; }
+  .receipt-checks p { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .receipt-check { font-size: 10px; margin: 2px 0; }
+  .receipt-agree { text-align: center; font-size: 10px; font-weight: 700; margin: 7px 0; background: #f0fdf4; padding: 6px; border-radius: 5px; }
+  .receipt-footer { text-align: center; font-size: 9px; color: var(--muted); margin-top: 10px; line-height: 1.6; }
+
+  /* SUCCESS */
+  .success-icon { width: 60px; height: 60px; background: var(--green); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .success-icon svg { width: 32px; height: 32px; }
+  .pdf-badge { display: flex; align-items: center; justify-content: center; gap: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--green); border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 700; margin: 0 auto 14px; }
+
+  /* ===== 印刷専用レイアウト ===== */
+  #printArea { display: none; }
+
+  @media print {
+    @page { size: A5; margin: 8mm; }
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea {
+      display: block !important;
+      position: fixed; top: 0; left: 0;
+      width: 148mm; min-height: 210mm;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 8pt; color: #000;
+      background: white;
+    }
+    .p-header { text-align: center; border-bottom: 2px solid #1a5276; padding-bottom: 5px; margin-bottom: 6px; }
+    .p-hotel { font-size: 7pt; color: #555; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .p-title { font-size: 14pt; font-weight: 900; color: #1a5276; margin-bottom: 2px; }
+    .p-avail { font-size: 8pt; color: #333; }
+    .p-avail strong { font-size: 10pt; }
+
+    .p-info-grid { border: 1px solid #ccc; border-radius: 3px; margin-bottom: 6px; }
+    .p-info-row { display: flex; justify-content: space-between; padding: 3px 7px; border-bottom: 1px solid #eee; font-size: 8pt; }
+    .p-info-row:last-child { border-bottom: none; }
+    .p-key { color: #666; }
+    .p-val { font-weight: 700; }
+    .p-accent { color: #1a5276; font-weight: 900; }
+
+    .p-section-title { font-size: 8pt; font-weight: 700; background: #1a5276; color: white; padding: 3px 7px; margin-bottom: 4px; }
+
+    .p-checks { margin-bottom: 4px; }
+    .p-check-item { display: flex; gap: 5px; padding: 3px 0; border-bottom: 1px solid #eee; align-items: flex-start; }
+    .p-check-item:last-child { border-bottom: none; }
+    .p-chk { font-size: 10pt; color: #1a5276; font-weight: 900; flex-shrink: 0; margin-top: 1px; }
+    .p-check-body { flex: 1; }
+    .p-check-label { display: inline-block; font-size: 7pt; font-weight: 700; padding: 1px 5px; border-radius: 2px; margin-bottom: 1px; color: white; }
+    .p-label-blue { background: #1a5276; }
+    .p-label-red { background: #c0392b; }
+    .p-check-main { font-size: 7.5pt; font-weight: 700; line-height: 1.4; margin-bottom: 1px; }
+    .p-check-sub { font-size: 6.5pt; color: #555; line-height: 1.4; }
+
+    .p-note { font-size: 6.5pt; color: #555; text-align: center; margin: 3px 0 5px; }
+    .p-agree-text { font-size: 8pt; font-weight: 700; text-align: center; margin-bottom: 5px; border-top: 1px solid #ccc; padding-top: 4px; }
+
+    .p-sign-row { display: flex; gap: 5px; margin-bottom: 4px; }
+    .p-sign-box { flex: 1; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; }
+    .p-sign-label { font-size: 7pt; color: #666; margin-bottom: 3px; font-weight: 700; }
+    .p-sign-img-wrap { border: 1px solid #ddd; border-radius: 2px; height: 22mm; background: #fafafa; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; overflow: hidden; }
+    .p-sign-img-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .p-agreed-time { font-size: 6.5pt; color: #666; }
+
+    .p-return-box { flex: 1; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; }
+    .p-return-title { font-size: 7pt; font-weight: 700; color: #666; text-align: center; margin-bottom: 4px; border-bottom: 1px dashed #ccc; padding-bottom: 2px; }
+    .p-return-row { margin-bottom: 5px; }
+    .p-return-key { font-size: 6.5pt; color: #666; display: block; margin-bottom: 1px; }
+    .p-return-blank { display: block; border-bottom: 1px solid #999; min-height: 6mm; font-size: 8pt; }
+
+    .p-footer { text-align: center; font-size: 6.5pt; color: #888; border-top: 1px solid #ccc; padding-top: 3px; margin-top: 3px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 進捗バー固定ヘッダー（STEP2スクロール中に表示） -->
+<div class="progress-sticky" id="progressSticky">
+  <div class="progress-text" id="progressTextSticky">0 / 6 項目確認済み</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFillSticky" style="width:0%"></div></div>
+</div>
+
+<div class="header">
+  <div class="hotel-name">HOTEL PATINA ISHIGAKIJIMA</div>
+  <h1>🚲 レンタサイクル利用規約</h1>
+  <div class="avail">自転車利用可能時間　<span>7:00 〜 23:00</span></div>
+</div>
+
+<div class="steps">
+  <div class="step-dot active" id="sd1">1</div><div class="step-line"></div>
+  <div class="step-dot" id="sd2">2</div><div class="step-line"></div>
+  <div class="step-dot" id="sd3">3</div><div class="step-line"></div>
+  <div class="step-dot" id="sd4">✍</div><div class="step-line"></div>
+  <div class="step-dot" id="sd5">✓</div>
+</div>
+
+<!-- ===== SCREEN 1: 部屋番号・号車選択 ===== -->
+<div class="screen active" id="screen1">
+  <div class="card">
+    <div class="card-title">STEP 1　部屋番号・車両選択</div>
+
+    <div class="input-row">
+      <label>部屋番号</label>
+      <input type="text" id="roomInput" inputmode="numeric" placeholder="例：305" oninput="checkScreen1()">
+    </div>
+
+    <label style="display:block; font-size:12px; color:var(--muted); font-weight:700; margin-bottom:8px; letter-spacing:0.05em;">車両番号（複数選択可）</label>
+    <div class="bike-grid" id="bikeGrid"></div>
+
+    <div class="selection-banner empty" id="selectionBanner">
+      <span class="sl">選択中の車両</span>
+      <span class="sv" id="selectionText">未選択</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">貸渡時間</div>
+    <div class="time-row">
+      <span class="time-label">利用開始日時</span>
+      <span class="time-value" id="startTime">--:--</span>
+    </div>
+    <div class="time-row">
+      <span class="time-label">返却予定時間（無料5時間）</span>
+      <span class="time-value hl" id="endTime">--:--</span>
+    </div>
+    <div class="time-row">
+      <span class="time-label">日付</span>
+      <span class="time-value" id="dateDisplay">--</span>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="nextBtn1" disabled onclick="goToScreen2()">
+    次へ　利用規約の確認 →
+  </button>
+</div>
+
+<!-- ===== SCREEN 2: 利用規約チェック ===== -->
+<div class="screen" id="screen2">
+  <div class="card">
+    <div class="card-title">STEP 2　以下の項目をご確認ください</div>
+    <div class="progress-text" id="progressText">0 / 6 項目確認済み</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+    <div id="checkList">
+
+      <!-- 1 -->
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text">
+          <span class="highlight-label">料金について</span>
+          <strong>無料でのご利用時間は、5時間まで。以降30分ごとに200円いただきます。</strong>
+          <span class="sub">返却予定時間は厳守でお願いいたします。延長の場合はご連絡お願いいたします。</span>
+        </div>
+      </div>
+
+      <!-- 2 -->
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text">
+          <span class="highlight-label">23時以降について</span>
+          <strong>23時までに返却がない場合、翌朝7時まで返却ができませんのでご注意ください。</strong>
+          <span class="sub">日をまたいだ場合（23時までの延長料金＋日またぎ料金一律800円）をいただきます。</span>
+          <span class="sub">例：15時スタートの場合、20時まで無料。20時から23時までの3時間分（1,200円）と日またぎ料金一律800円の合計2,000円となります。</span>
+        </div>
+      </div>
+
+      <!-- 3 -->
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text">
+          <span class="warn-label">自転車盗難及び破損など</span>
+          <strong>自転車が盗難にあった場合いかなる理由とも車両代金を¥25,000いただきます。</strong>
+          <span class="sub">※石垣島は自転車盗難が多いです。自転車から離れる際は、必ず鍵をかけていただきますようお願いいたします。</span>
+        </div>
+      </div>
+
+      <!-- 4 -->
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text">
+          <span class="warn-label">飲酒運転・二人乗りの厳禁</span>
+          <strong>飲酒されての運転はご遠慮いただいています（道路交通法第65条）</strong>
+          <span class="sub">※飲酒された場合は、自転車を押してホテルまでお帰りくださいますようお願いいたします。</span>
+        </div>
+      </div>
+
+      <!-- 5 -->
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text">
+          <span class="highlight-label">タイヤパンク・カギ紛失・故障時の対応について</span>
+          <strong>ご利用中にパンクなどをされた場合、修理費用はいただきませんが、必ず自転車の返却をお願いいたします（車両放置厳禁）。</strong>
+          <span class="sub">※車両放置をされた場合や鍵紛失の場合、回収費として島内全域8,000円いただきます。</span>
+          <span class="sub">※鍵の紛失は取替代金として2,500円をいただきます。</span>
+        </div>
+      </div>
+
+      <!-- 6 -->
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="check-text">
+          <span class="highlight-label">車両点検について</span>
+          <strong>常日頃、車両点検をしていますが、ご利用前にお客さま自身でも確認お願いいたします。</strong>
+          <span class="sub">※整備不良での事故がありましても、当ホテルは一切の責任を負いかねますので、あらかじめご了承ください。</span>
+        </div>
+      </div>
+
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin-top:14px; line-height:1.7; text-align:center;">
+      ※ご利用の際は、道路交通法に従い、安全安心快適なサイクリングをお楽しみください
+    </p>
+  </div>
+
+  <button class="btn btn-secondary" onclick="goToScreen1()">← 戻る</button>
+  <button class="btn btn-primary" id="nextBtn2" disabled onclick="goToScreen3()">次へ　同意確認 →</button>
+</div>
+
+<!-- ===== SCREEN 3: 同意確認 ===== -->
+<div class="screen" id="screen3">
+  <div class="card">
+    <div class="card-title">STEP 3　内容の確認と同意</div>
+    <div class="confirm-summary">
+      <div class="confirm-row">
+        <span class="key">部屋番号</span>
+        <span class="val" id="confirmRoom">-</span>
+      </div>
+      <div class="confirm-row">
+        <span class="key">車両番号</span>
+        <span class="val"><div class="bike-tags" id="confirmBikes"></div></span>
+      </div>
+      <div class="confirm-row">
+        <span class="key">利用開始</span>
+        <span class="val" id="confirmStart">-</span>
+      </div>
+      <div class="confirm-row">
+        <span class="key">返却予定時間</span>
+        <span class="val" id="confirmEnd">-</span>
+      </div>
+      <div class="confirm-row">
+        <span class="key">確認項目</span>
+        <span class="val">6項目 ✓</span>
+      </div>
+    </div>
+    <div class="agree-box">
+      <p>上記の内容に同意した上で、<br>ご署名をお願いいたします。</p>
+      <button class="agree-btn" id="agreeBtn" onclick="toggleAgree()">タップして同意する</button>
+    </div>
+  </div>
+  <button class="btn btn-secondary" onclick="goToScreen2()">← 戻る</button>
+  <button class="btn btn-primary" id="nextBtn3" disabled onclick="goToScreen4()">次へ　署名へ →</button>
+</div>
+
+<!-- ===== SCREEN 4: サイン ===== -->
+<div class="screen" id="screen4">
+  <div class="card">
+    <div class="card-title">STEP 4　代表者署名</div>
+    <div class="sign-instruction">
+      <strong>✍️ 枠内に指でサインしてください</strong>
+      <span>利用規約に同意された証としてご署名をお願いします</span>
+    </div>
+    <div class="canvas-wrap" id="canvasWrap">
+      <canvas id="signCanvas"></canvas>
+      <div class="canvas-placeholder" id="canvasPlaceholder">ここにサインしてください</div>
+    </div>
+    <div class="sign-actions">
+      <button class="btn btn-outline-red" onclick="clearSign()">書き直す</button>
+      <button class="btn btn-primary" id="signDoneBtn" disabled onclick="goToScreen5()">確定 →</button>
+    </div>
+  </div>
+  <button class="btn btn-secondary" onclick="goToScreen3()">← 戻る</button>
+</div>
+
+<!-- ===== SCREEN 5: 完了 ===== -->
+<div class="screen" id="screen5">
+  <div style="text-align:center; padding: 18px 0 4px;">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h2 style="font-size:19px; font-weight:900; margin-bottom:6px;">手続き完了</h2>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:6px;">2枚印刷して、1枚はお客様へ・1枚はホテル控えに</p>
+  </div>
+
+  <div class="receipt" id="receipt">
+    <div class="receipt-header">
+      <div class="r-hotel">HOTEL PATINA ISHIGAKIJIMA</div>
+      <h2>🚲 レンタサイクル利用規約</h2>
+      <div class="r-avail">利用可能時間 7:00〜23:00</div>
+    </div>
+    <hr class="receipt-divider">
+    <div class="receipt-room"><span class="r-key">部屋番号：</span><span class="r-val" id="r-room">-</span></div>
+    <div class="receipt-bikes"><span class="r-key">車両番号：</span><span class="r-val" id="r-bikes">-</span></div>
+    <div class="receipt-row"><span class="r-key">利用開始日時</span><span class="r-val" id="r-start">-</span></div>
+    <div class="receipt-row"><span class="r-key">返却予定時間</span><span class="r-val" id="r-end">-</span></div>
+    <hr class="receipt-divider">
+    <div class="receipt-checks">
+      <p>■ 確認済み項目</p>
+      <div class="receipt-check">☑ 料金について（5時間無料・以降30分200円）</div>
+      <div class="receipt-check">☑ 23時以降のルールについて</div>
+      <div class="receipt-check">☑ 自転車盗難及び破損（車両代金¥25,000）</div>
+      <div class="receipt-check">☑ 飲酒運転・二人乗りの厳禁</div>
+      <div class="receipt-check">☑ パンク・カギ紛失・故障時の対応</div>
+      <div class="receipt-check">☑ 車両点検について</div>
+    </div>
+    <hr class="receipt-divider">
+    <div class="receipt-agree">✅ 上記の内容に同意しました</div>
+    <div class="receipt-row"><span class="r-key">同意日時</span><span class="r-val" id="r-agreed">-</span></div>
+    <hr class="receipt-divider">
+    <div class="receipt-footer">
+      <p>ホテルパティーナ石垣島</p>
+      <p>安全安心快適なサイクリングをお楽しみください</p>
+    </div>
+  </div>
+
+  <button class="btn btn-success" onclick="doPrint()">🖨️　2枚印刷する（お客様用・控え用）</button>
+  <button class="btn btn-secondary" onclick="resetAll()" style="margin-top:12px;">新しい貸渡を開始</button>
+</div>
+
+<!-- ===== 印刷専用A5レイアウト（画面非表示・印刷時のみ表示） ===== -->
+<div id="printArea">
+  <div class="p-header">
+    <div class="p-hotel">HOTEL PATINA ISHIGAKIJIMA　ホテルパティーナ石垣島</div>
+    <div class="p-title">🚲 レンタサイクル利用規約</div>
+    <div class="p-avail">自転車利用可能時間　<strong>7:00 〜 23:00</strong></div>
+  </div>
+
+  <div class="p-info-grid">
+    <div class="p-info-row"><span class="p-key">部屋番号</span><span class="p-val" id="p-room">-</span></div>
+    <div class="p-info-row"><span class="p-key">車両番号</span><span class="p-val" id="p-bikes">-</span></div>
+    <div class="p-info-row"><span class="p-key">利用開始日時</span><span class="p-val" id="p-start">-</span></div>
+    <div class="p-info-row"><span class="p-key">返却予定時間</span><span class="p-val p-accent" id="p-end">-</span></div>
+  </div>
+
+  <div class="p-section-title">■ 以下の項目を確認いただき☑チェックお願いいたします</div>
+
+  <div class="p-checks">
+    <div class="p-check-item">
+      <span class="p-chk">☑</span>
+      <div class="p-check-body">
+        <div class="p-check-label p-label-blue">料金について</div>
+        <div class="p-check-main">無料でのご利用時間は、5時間まで。以降30分ごとに200円いただきます。</div>
+        <div class="p-check-sub">返却予定時間は厳守でお願いいたします。延長の場合はご連絡お願いいたします。</div>
+      </div>
+    </div>
+    <div class="p-check-item">
+      <span class="p-chk">☑</span>
+      <div class="p-check-body">
+        <div class="p-check-label p-label-blue">23時以降について</div>
+        <div class="p-check-main">23時までに返却がない場合、翌朝7時まで返却ができませんのでご注意ください。</div>
+        <div class="p-check-sub">日をまたいだ場合（23時までの延長料金＋日またぎ料金一律800円）をいただきます。</div>
+        <div class="p-check-sub">例：15時スタートの場合、20時まで無料。20時から23時までの3時間分（1,200円）と日またぎ料金一律800円の合計2,000円となります。</div>
+      </div>
+    </div>
+    <div class="p-check-item">
+      <span class="p-chk">☑</span>
+      <div class="p-check-body">
+        <div class="p-check-label p-label-red">自転車盗難及び破損など</div>
+        <div class="p-check-main">自転車が盗難にあった場合いかなる理由とも車両代金を¥25,000いただきます。</div>
+        <div class="p-check-sub">※石垣島は自転車盗難が多いです。自転車から離れる際は、必ず鍵をかけていただきますようお願いいたします。</div>
+      </div>
+    </div>
+    <div class="p-check-item">
+      <span class="p-chk">☑</span>
+      <div class="p-check-body">
+        <div class="p-check-label p-label-red">飲酒運転・二人乗りの厳禁</div>
+        <div class="p-check-main">飲酒されての運転はご遠慮いただいています（道路交通法第65条）</div>
+        <div class="p-check-sub">※飲酒された場合は、自転車を押してホテルまでお帰りくださいますようお願いいたします。</div>
+      </div>
+    </div>
+    <div class="p-check-item">
+      <span class="p-chk">☑</span>
+      <div class="p-check-body">
+        <div class="p-check-label p-label-blue">タイヤパンク・カギ紛失・故障時の対応について</div>
+        <div class="p-check-main">ご利用中にパンクなどをされた場合、修理費用はいただきませんが、必ず自転車の返却をお願いいたします（車両放置厳禁）。</div>
+        <div class="p-check-sub">※車両放置をされた場合や鍵紛失の場合、回収費として島内全域8,000円いただきます。</div>
+        <div class="p-check-sub">※鍵の紛失は取替代金として2,500円をいただきます。</div>
+      </div>
+    </div>
+    <div class="p-check-item">
+      <span class="p-chk">☑</span>
+      <div class="p-check-body">
+        <div class="p-check-label p-label-blue">車両点検について</div>
+        <div class="p-check-main">常日頃、車両点検をしていますが、ご利用前にお客さま自身でも確認お願いいたします。</div>
+        <div class="p-check-sub">※整備不良での事故がありましても、当ホテルは一切の責任を負いかねますので、あらかじめご了承ください。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-note">※ご利用の際は、道路交通法に従い、安全安心快適なサイクリングをお楽しみください</div>
+  <div class="p-agree-text">上記の内容に同意した上で、ご署名をお願いいたします。</div>
+
+  <div class="p-sign-row">
+    <div class="p-sign-box">
+      <div class="p-sign-label">代表者署名</div>
+      <div class="p-sign-img-wrap">
+        <img id="p-sign-img" src="" alt="署名">
+      </div>
+      <div class="p-agreed-time">同意日時：<span id="p-agreed">-</span></div>
+    </div>
+    <div class="p-return-box">
+      <div class="p-return-title">― ホテル側記入欄 ―</div>
+      <div class="p-return-row">
+        <span class="p-return-key">実際の返却時間</span>
+        <span class="p-return-blank">　　時　　分</span>
+      </div>
+      <div class="p-return-row">
+        <span class="p-return-key">対応スタッフ</span>
+        <span class="p-return-blank"></span>
+      </div>
+      <div class="p-return-row">
+        <span class="p-return-key">備考</span>
+        <span class="p-return-blank"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-footer">ホテルパティーナ石垣島　HOTEL PATINA ISHIGAKIJIMA</div>
+</div>
+
+<script>
+  const BIKE_COUNT = 10;
+  let selectedBikes = new Set();
+  let startTime = null, endTime = null;
+  let agreed = false, agreeTime = null;
+  let canvas, ctx, drawing = false, hasSigned = false;
+
+  // ===== 号車ボタン生成 =====
+  const grid = document.getElementById('bikeGrid');
+  for (let i = 1; i <= BIKE_COUNT; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'bike-btn';
+    btn.dataset.num = i;
+    btn.innerHTML = `<span class="num">${i}</span><span class="lbl">号車</span>
+      <span class="cbadge"><svg viewBox="0 0 24 24" fill="none" stroke="#1a5276" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+    btn.onclick = () => toggleBike(i, btn);
+    grid.appendChild(btn);
+  }
+
+  function toggleBike(num, btn) {
+    if (selectedBikes.has(num)) { selectedBikes.delete(num); btn.classList.remove('selected'); }
+    else { selectedBikes.add(num); btn.classList.add('selected'); }
+    updateSelectionBanner();
+    checkScreen1();
+  }
+
+  function updateSelectionBanner() {
+    const banner = document.getElementById('selectionBanner');
+    const text = document.getElementById('selectionText');
+    if (selectedBikes.size === 0) {
+      banner.classList.add('empty'); text.textContent = '未選択';
+    } else {
+      banner.classList.remove('empty');
+      text.textContent = [...selectedBikes].sort((a,b)=>a-b).map(n => n + '号車').join('　');
+    }
+  }
+
+  function checkScreen1() {
+    const room = document.getElementById('roomInput').value.trim();
+    document.getElementById('nextBtn1').disabled = (room === '' || selectedBikes.size === 0);
+  }
+
+  // ===== 時刻 =====
+  const pad = n => String(n).padStart(2, '0');
+  function updateTime() {
+    const now = new Date();
+    startTime = now;
+
+    // 5時間後を計算し、23:00を超える場合は当日23:00を上限にする
+    const fiveHoursLater = new Date(now.getTime() + 5 * 60 * 60 * 1000);
+    const limit23 = new Date(now);
+    limit23.setHours(23, 0, 0, 0);
+    endTime = fiveHoursLater > limit23 ? limit23 : fiveHoursLater;
+
+    const fmt = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    document.getElementById('startTime').textContent = fmt(now);
+    document.getElementById('endTime').textContent = fmt(endTime);
+    document.getElementById('dateDisplay').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  }
+  updateTime();
+  setInterval(updateTime, 30000);
+
+  // ===== チェックリスト =====
+  function toggleCheck(item) {
+    item.classList.toggle('checked');
+    const total = document.querySelectorAll('.check-item').length;
+    const done = document.querySelectorAll('.check-item.checked').length;
+    const text = `${done} / ${total} 項目確認済み`;
+    const pct = (done / total * 100) + '%';
+    document.getElementById('progressText').textContent = text;
+    document.getElementById('progressFill').style.width = pct;
+    // 固定バーも連動
+    document.getElementById('progressTextSticky').textContent = text;
+    document.getElementById('progressFillSticky').style.width = pct;
+    document.getElementById('nextBtn2').disabled = done < total;
+  }
+
+  // STEP2スクロール時に固定バーを表示/非表示
+  window.addEventListener('scroll', () => {
+    const screen2 = document.getElementById('screen2');
+    const sticky = document.getElementById('progressSticky');
+    if (screen2.classList.contains('active')) {
+      // カード内の進捗バーが隠れたら固定バーを表示
+      const bar = document.getElementById('progressFill').closest('.progress-bar');
+      const rect = bar.getBoundingClientRect();
+      sticky.classList.toggle('visible', rect.bottom < 0);
+    } else {
+      sticky.classList.remove('visible');
+    }
+  });
+
+  // ===== 同意 =====
+  function toggleAgree() {
+    agreed = !agreed;
+    const btn = document.getElementById('agreeBtn');
+    btn.textContent = agreed ? '✅ 同意しました' : 'タップして同意する';
+    btn.classList.toggle('agreed', agreed);
+    document.getElementById('nextBtn3').disabled = !agreed;
+    if (agreed) agreeTime = new Date();
+  }
+
+  // ===== ステップバー =====
+  function updateStepBar(n) {
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('sd' + i);
+      el.classList.remove('active','done');
+      if (i < n) el.classList.add('done');
+      else if (i === n) el.classList.add('active');
+    }
+  }
+
+  function showScreen(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen' + n).classList.add('active');
+    updateStepBar(n);
+    window.scrollTo(0,0);
+    // STEP2以外では固定バーを非表示
+    document.getElementById('progressSticky').classList.remove('visible');
+  }
+
+  function goToScreen1() { showScreen(1); }
+  function goToScreen2() { updateTime(); showScreen(2); }
+
+  function goToScreen3() {
+    const fmt = d => `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const fmtT = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    document.getElementById('confirmRoom').textContent = document.getElementById('roomInput').value.trim() + '号室';
+    const container = document.getElementById('confirmBikes');
+    container.innerHTML = '';
+    [...selectedBikes].sort((a,b)=>a-b).forEach(n => {
+      const tag = document.createElement('span');
+      tag.className = 'bike-tag';
+      tag.textContent = n + '号車';
+      container.appendChild(tag);
+    });
+    document.getElementById('confirmStart').textContent = fmt(startTime);
+    document.getElementById('confirmEnd').textContent = fmtT(endTime);
+    showScreen(3);
+  }
+
+  function goToScreen4() { showScreen(4); initCanvas(); }
+
+  function goToScreen5() {
+    const fmt = d => `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const fmtT = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const room = document.getElementById('roomInput').value.trim();
+    const bikeLabel = [...selectedBikes].sort((a,b)=>a-b).map(n => n + '号車').join('・');
+    const agreedStr = fmt(agreeTime || new Date());
+
+    // レシート欄
+    document.getElementById('r-room').textContent = room + '号室';
+    document.getElementById('r-bikes').textContent = bikeLabel;
+    document.getElementById('r-start').textContent = fmt(startTime);
+    document.getElementById('r-end').textContent = fmtT(endTime);
+    document.getElementById('r-agreed').textContent = agreedStr;
+
+    // 印刷用A5エリア
+    document.getElementById('p-room').textContent = room + '号室';
+    document.getElementById('p-bikes').textContent = bikeLabel;
+    document.getElementById('p-start').textContent = fmt(startTime);
+    document.getElementById('p-end').textContent = fmtT(endTime) + '（23時上限）';
+    document.getElementById('p-agreed').textContent = agreedStr;
+    // サイン画像をセット
+    if (canvas) {
+      document.getElementById('p-sign-img').src = canvas.toDataURL('image/png');
+    }
+
+    showScreen(5);
+    setTimeout(() => generatePDF(), 800);
+  }
+
+  function doPrint() {
+    // 印刷前にサイン画像を再セット（念のため）
+    if (canvas) {
+      document.getElementById('p-sign-img').src = canvas.toDataURL('image/png');
+    }
+    window.print();
+  }
+
+  // ===== サインキャンバス =====
+  function initCanvas() {
+    const wrap = document.getElementById('canvasWrap');
+    const oldCanvas = document.getElementById('signCanvas');
+    const newCanvas = oldCanvas.cloneNode(false);
+    wrap.replaceChild(newCanvas, oldCanvas);
+    canvas = newCanvas;
+
+    const w = wrap.clientWidth;
+    const h = Math.round(w * 0.42);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+    hasSigned = false;
+    document.getElementById('signDoneBtn').disabled = true;
+    document.getElementById('canvasPlaceholder').style.display = 'block';
+
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); startDraw(e); }, { passive: false });
+    canvas.addEventListener('touchmove',  e => { e.preventDefault(); moveDraw(e); },  { passive: false });
+    canvas.addEventListener('touchend',   () => { drawing = false; });
+    canvas.addEventListener('mousedown',  e => startDraw(e));
+    canvas.addEventListener('mousemove',  e => moveDraw(e));
+    canvas.addEventListener('mouseup',    () => { drawing = false; });
+  }
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+  function startDraw(e) {
+    drawing = true;
+    const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
+    if (!hasSigned) {
+      hasSigned = true;
+      document.getElementById('canvasPlaceholder').style.display = 'none';
+      document.getElementById('signDoneBtn').disabled = false;
+    }
+  }
+  function moveDraw(e) {
+    if (!drawing) return;
+    const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+  }
+  function clearSign() {
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+    hasSigned = false;
+    document.getElementById('signDoneBtn').disabled = true;
+    document.getElementById('canvasPlaceholder').style.display = 'block';
+  }
+
+  // ===== PDF生成（新ウィンドウ印刷方式・日本語完全対応） =====
+  function generatePDF() {
+    const fmt = d => `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const fmtT = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const room = document.getElementById('roomInput').value.trim();
+    const bikeLabel = [...selectedBikes].sort((a,b)=>a-b).map(n => n + '号車').join('・');
+    const signSrc = canvas ? canvas.toDataURL('image/png') : '';
+    const agreedStr = fmt(agreeTime || new Date());
+    // ★ Safari対応: mm単位をpxに変換（96dpi基準: 1mm≒3.78px）
+    // A5=148×210mm → 559×794px、余白6mm≒23px → コンテンツ幅=513px
+
+    const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=559">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 559px; overflow-x: hidden; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 9.5pt;
+    color: #000;
+    background: white;
+    padding: 14px 20px 12px;
+  }
+  @media print {
+    @page { size: A5 portrait; margin: 0mm; }
+    html, body { width: 559px; }
+  }
+  .hd { text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 5px; }
+  .hd-hotel { font-size: 7pt; color: #333; margin-bottom: 1px; }
+  .hd-title { font-size: 15pt; font-weight: 900; margin-bottom: 2px; letter-spacing: 0.05em; }
+  .hd-avail { font-size: 9pt; font-weight: 700; }
+  table.info { width: 519px; border-collapse: collapse; margin-bottom: 5px; table-layout: fixed; }
+  table.info td { padding: 3px 7px; border: 1px solid #000; font-size: 9pt; overflow: hidden; }
+  table.info td:first-child { width: 32%; background: #f0f0f0; font-weight: 700; }
+  table.info td.acc { font-weight: 900; text-decoration: underline; }
+  .sec { background: #000; color: white; font-size: 8pt; font-weight: 700; padding: 3px 7px; margin-bottom: 3px; }
+  .checks { margin-bottom: 3px; border: 1px solid #000; }
+  .ci { display: flex; gap: 4px; padding: 3px 6px; border-bottom: 1px solid #bbb; }
+  .ci:last-child { border-bottom: none; }
+  .chk { font-weight: 900; font-size: 10pt; flex-shrink: 0; line-height: 1.3; width: 14px; }
+  .cb { flex: 1; min-width: 0; overflow-wrap: break-word; word-break: break-all; }
+  .lbl { display: inline-block; font-size: 7pt; font-weight: 700; padding: 0 5px; border: 1.5px solid #000; margin-bottom: 2px; }
+  .cm { font-size: 8.5pt; font-weight: 700; line-height: 1.4; margin-bottom: 1px; }
+  .cs { font-size: 7pt; color: #333; line-height: 1.35; overflow-wrap: break-word; }
+  .note { font-size: 6.5pt; color: #333; text-align: center; margin: 2px 0 3px; }
+  .agree { font-size: 9.5pt; font-weight: 700; text-align: center; border-top: 2px solid #000; padding-top: 3px; margin-bottom: 4px; }
+  /* お客様控え：署名欄のみ横幅いっぱい */
+  .bottom-single { border: 1.5px solid #000; padding: 4px 6px; margin-bottom: 3px; }
+  .simg-wide { border: 1px solid #999; height: 65px; width: 100%; object-fit: contain; background: white; display: block; }
+  /* ホテル控え：署名＋記入欄を横並び */
+  .bottom { display: flex; gap: 6px; width: 519px; margin-bottom: 3px; }
+  .sbox { flex: 1; border: 1.5px solid #000; padding: 3px 5px; min-width: 0; }
+  .simg { border: 1px solid #999; height: 65px; width: 100%; object-fit: contain; background: white; display: block; }
+  .slbl { font-size: 7.5pt; font-weight: 700; margin-bottom: 2px; }
+  .stime { font-size: 6.5pt; color: #333; margin-top: 2px; }
+  .hbox { flex: 1; border: 1.5px solid #000; padding: 3px 5px; min-width: 0; }
+  .htitle { font-size: 7.5pt; font-weight: 700; text-align: center; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 3px; }
+  .hr { margin-bottom: 4px; }
+  .hk { font-size: 7pt; display: block; margin-bottom: 1px; }
+  .hb { display: block; border-bottom: 1.5px solid #000; min-height: 13px; }
+  .footer { text-align: center; font-size: 7pt; border-top: 1px solid #000; padding-top: 2px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="hd">
+  <div class="hd-hotel">HOTEL PATINA ISHIGAKIJIMA　ホテルパティーナ石垣島</div>
+  <div class="hd-title">レンタサイクル利用規約</div>
+  <div class="hd-avail">自転車利用可能時間　7:00 〜 23:00</div>
+</div>
+<table class="info">
+  <tr><td>部屋番号</td><td>${room}号室</td></tr>
+  <tr><td>車両番号</td><td>${bikeLabel}</td></tr>
+  <tr><td>利用開始日時</td><td>${fmt(startTime)}</td></tr>
+  <tr><td>返却予定時間</td><td class="acc">${fmtT(endTime)}（23時上限）</td></tr>
+  <tr><td>同意日時</td><td>${agreedStr}</td></tr>
+</table>
+<div class="sec">■ 以下の項目を確認いただき☑チェックお願いいたします</div>
+<div class="checks">
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">料金について</div><div class="cm">無料でのご利用時間は、5時間まで。以降30分ごとに200円いただきます。</div><div class="cs">返却予定時間は厳守でお願いいたします。延長の場合はご連絡ください。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">23時以降について</div><div class="cm">23時までに返却がない場合、翌朝7時まで返却できません。</div><div class="cs">日をまたいだ場合：延長料金＋日またぎ料金一律800円。例）15時スタート→20時まで無料、20〜23時分1,200円＋800円＝合計2,000円。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">自転車盗難及び破損など</div><div class="cm">盗難の場合、いかなる理由とも車両代金¥25,000いただきます。</div><div class="cs">※離れる際は必ず鍵をかけてください。石垣島は盗難が多いです。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">飲酒運転・二人乗りの厳禁</div><div class="cm">飲酒運転は法律違反です（道路交通法第65条）。飲酒後は自転車を押してお帰りください。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">タイヤパンク・カギ紛失・故障時の対応</div><div class="cm">パンク時は修理費不要ですが、必ず返却してください（車両放置厳禁）。</div><div class="cs">※放置・鍵紛失の場合：回収費8,000円、鍵取替2,500円。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">車両点検について</div><div class="cm">ご利用前にお客さま自身でも車両の状態をご確認ください。</div><div class="cs">※整備不良での事故につき、当ホテルは責任を負いかねます。</div></div></div>
+</div>
+<div class="note">※道路交通法に従い、安全安心快適なサイクリングをお楽しみください</div>
+<div class="agree">上記の内容に同意した上で、ご署名をお願いいたします。</div>
+<div class="bottom-single">
+  <div class="slbl">代表者署名</div>
+  <img class="simg-wide" src="${signSrc}" alt="署名">
+  <div class="stime">同意日時：${agreedStr}</div>
+</div>
+<div class="footer">ホテルパティーナ石垣島　HOTEL PATINA ISHIGAKIJIMA　【お客様控え】</div>
+<div style="page-break-after: always;"></div>
+<div class="hd">
+  <div class="hd-hotel">HOTEL PATINA ISHIGAKIJIMA　ホテルパティーナ石垣島</div>
+  <div class="hd-title">レンタサイクル利用規約</div>
+  <div class="hd-avail">自転車利用可能時間　7:00 〜 23:00</div>
+</div>
+<table class="info">
+  <tr><td>部屋番号</td><td>${room}号室</td></tr>
+  <tr><td>車両番号</td><td>${bikeLabel}</td></tr>
+  <tr><td>利用開始日時</td><td>${fmt(startTime)}</td></tr>
+  <tr><td>返却予定時間</td><td class="acc">${fmtT(endTime)}（23時上限）</td></tr>
+  <tr><td>同意日時</td><td>${agreedStr}</td></tr>
+</table>
+<div class="sec">■ 以下の項目を確認いただき☑チェックお願いいたします</div>
+<div class="checks">
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">料金について</div><div class="cm">無料でのご利用時間は、5時間まで。以降30分ごとに200円いただきます。</div><div class="cs">返却予定時間は厳守でお願いいたします。延長の場合はご連絡ください。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">23時以降について</div><div class="cm">23時までに返却がない場合、翌朝7時まで返却できません。</div><div class="cs">日をまたいだ場合：延長料金＋日またぎ料金一律800円。例）15時スタート→20時まで無料、20〜23時分1,200円＋800円＝合計2,000円。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">自転車盗難及び破損など</div><div class="cm">盗難の場合、いかなる理由とも車両代金¥25,000いただきます。</div><div class="cs">※離れる際は必ず鍵をかけてください。石垣島は盗難が多いです。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">飲酒運転・二人乗りの厳禁</div><div class="cm">飲酒運転は法律違反です（道路交通法第65条）。飲酒後は自転車を押してお帰りください。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">タイヤパンク・カギ紛失・故障時の対応</div><div class="cm">パンク時は修理費不要ですが、必ず返却してください（車両放置厳禁）。</div><div class="cs">※放置・鍵紛失の場合：回収費8,000円、鍵取替2,500円。</div></div></div>
+  <div class="ci"><span class="chk">☑</span><div class="cb"><div class="lbl">車両点検について</div><div class="cm">ご利用前にお客さま自身でも車両の状態をご確認ください。</div><div class="cs">※整備不良での事故につき、当ホテルは責任を負いかねます。</div></div></div>
+</div>
+<div class="note">※道路交通法に従い、安全安心快適なサイクリングをお楽しみください</div>
+<div class="agree">上記の内容に同意した上で、ご署名をお願いいたします。</div>
+<div class="bottom">
+  <div class="sbox">
+    <div class="slbl">代表者署名</div>
+    <img class="simg" src="${signSrc}" alt="署名">
+    <div class="stime">同意日時：${agreedStr}</div>
+  </div>
+  <div class="hbox">
+    <div class="htitle">― ホテル側記入欄 ―</div>
+    <div class="hr"><span class="hk">実際の返却時間</span><span class="hb">　　時　　分</span></div>
+    <div class="hr"><span class="hk">対応スタッフ</span><span class="hb"></span></div>
+    <div class="hr"><span class="hk">備考</span><span class="hb"></span></div>
+  </div>
+</div>
+<div class="footer">ホテルパティーナ石垣島　HOTEL PATINA ISHIGAKIJIMA　【ホテル控え】</div>
+</body></html>`;
+
+    const w = window.open('', '_blank', 'width=600,height=850');
+    w.document.write(html);
+    w.document.close();
+    // フォント読み込み後に印刷ダイアログを開く
+    w.onload = () => {
+      setTimeout(() => {
+        w.print();
+        // 印刷後ウィンドウを閉じる
+        setTimeout(() => w.close(), 3000);
+      }, 1000);
+    };
+  }
+
+  // ===== リセット =====
+  function resetAll() {
+    selectedBikes.clear(); agreed = false; agreeTime = null;
+    document.getElementById('roomInput').value = '';
+    document.querySelectorAll('.bike-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll('.check-item').forEach(i => i.classList.remove('checked'));
+    document.getElementById('agreeBtn').textContent = 'タップして同意する';
+    document.getElementById('agreeBtn').classList.remove('agreed');
+    document.getElementById('nextBtn1').disabled = true;
+    document.getElementById('nextBtn2').disabled = true;
+    document.getElementById('nextBtn3').disabled = true;
+    document.getElementById('progressText').textContent = '0 / 6 項目確認済み';
+    document.getElementById('progressFill').style.width = '0%';
+    updateSelectionBanner();
+    updateTime();
+    showScreen(1);
+  }
+</script>
+</body>
+</html>
